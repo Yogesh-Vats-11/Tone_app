@@ -1,0 +1,12 @@
+Flask
+text2emotion
+SpeechRecognition
+pyaudio
+numpy
+scipy
+matplotlib
+pyAudioAnalysis
+ffmpeg-python
+librosa
+torch
+transformers

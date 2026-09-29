@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Speech Emotion Detector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>🎙️ Speak and Detect Emotion</h1>
+
+    <button id="record-btn">🔴 Start Recording</button>
+    <button id="stop-btn" disabled>🛑 Stop Recording</button>
+
+    <form id="upload-form" method="POST" action="/analyze" enctype="multipart/form-data">
+        <input type="file" id="audio-file" name="audio" hidden required>
+        <button type="submit" id="submit-btn" disabled>Analyze Emotion</button>
+    </form>
+
+    <div id="loading" style="display:none;">⏳ Analyzing...</div>
+
+    {% if text %}
+    <div class="result">
+        <h3>📝 You said:</h3>
+        <p>{{ text }}</p>
+
+        <h3>🎯 Dominant Emotion from Text:</h3>
+        <p><strong>{{ dominant_emotion }}</strong></p>
+
+        <h3>📊 Text Emotion Scores:</h3>
+        <ul>
+            {% for key, val in emotions.items() %}
+                <li>{{ key }}: {{ (val * 100) | round(1) }}%</li>
+            {% endfor %}
+        </ul>
+
+        <h3>🎤 Emotion from Voice:</h3>
+        <p><strong style="font-size: 20px; color: #0077ff;">{{ voice_emotion }}</strong></p>
+
+        <h3>📈 Voice Emotion Probabilities:</h3>
+        <ul>
+            {% for label, val in voice_scores.items() %}
+                <li>{{ label }}: {{ (val * 100) | round(1) }}%</li>
+            {% endfor %}
+        </ul>
+
+        <h3>🔊 Your Voice:</h3>
+        <audio controls src="{{ audio_url }}"></audio>
+    </div>
+    {% endif %}
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+
+        const recordBtn = document.getElementById('record-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const submitBtn = document.getElementById('submit-btn');
+        const audioFileInput = document.getElementById('audio-file');
+        const loading = document.getElementById('loading');
+
+        recordBtn.onclick = async () => {
+            audioChunks = [];
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.start();
+            recordBtn.disabled = true;
+            stopBtn.disabled = false;
+
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        };
+
+        stopBtn.onclick = () => {
+            mediaRecorder.stop();
+            stopBtn.disabled = true;
+            recordBtn.disabled = false;
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                const file = new File([blob], 'recorded.webm');
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                audioFileInput.files = dt.files;
+                submitBtn.disabled = false;
+            };
+        };
+
+        document.getElementById('upload-form').onsubmit = () => {
+            loading.style.display = 'block';
+        };
+    </script>
+</body>
+</html>
